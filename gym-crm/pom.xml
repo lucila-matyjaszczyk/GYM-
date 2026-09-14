@@ -1,0 +1,167 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <groupId>com.gymcrm</groupId>
+    <artifactId>gym-crm</artifactId>
+    <version>1.0-SNAPSHOT</version>
+    <packaging>jar</packaging>
+
+    <name>gym-crm</name>
+    <description>Spring Core + Hibernate module for the Gym CRM system (persisted to an H2 relational database)</description>
+
+    <properties>
+        <maven.compiler.source>17</maven.compiler.source>
+        <maven.compiler.target>17</maven.compiler.target>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+
+        <spring.version>6.1.13</spring.version>
+        <slf4j.version>2.0.16</slf4j.version>
+        <logback.version>1.5.7</logback.version>
+        <junit.version>5.11.0</junit.version>
+        <mockito.version>5.13.0</mockito.version>
+        <aspectj.version>1.9.22</aspectj.version>
+        <hibernate.version>6.5.2.Final</hibernate.version>
+        <h2.version>2.2.224</h2.version>
+        <jakarta.annotation.version>2.1.1</jakarta.annotation.version>
+    </properties>
+
+    <dependencies>
+        <!-- Spring core (context + beans + AOP support included) -->
+        <dependency>
+            <groupId>org.springframework</groupId>
+            <artifactId>spring-context</artifactId>
+            <version>${spring.version}</version>
+        </dependency>
+
+        <!-- Spring AOP support: spring-context already pulls in Spring's own
+             spring-aop module transitively, but writing aspects with the
+             @AspectJ annotation style (@Aspect, @Before, @Around, pointcut
+             expressions like "@annotation(...)") needs AspectJ's annotation
+             types and pointcut-expression parser on the classpath. Note:
+             we're only reusing AspectJ's *annotations and expression syntax*
+             here; Spring still does the actual work with runtime proxies,
+             not real AspectJ compile-time/load-time weaving. -->
+        <dependency>
+            <groupId>org.aspectj</groupId>
+            <artifactId>aspectjweaver</artifactId>
+            <version>${aspectj.version}</version>
+        </dependency>
+
+        <!-- Hibernate itself: the ORM engine that translates our @Entity
+             classes into SQL. Pulls in the Jakarta Persistence API
+             (jakarta.persistence.*, the "rulebook" that @Entity/@OneToOne/
+             @ManyToOne/etc. annotations come from) transitively, so we
+             don't need to declare it separately. -->
+        <dependency>
+            <groupId>org.hibernate.orm</groupId>
+            <artifactId>hibernate-core</artifactId>
+            <version>${hibernate.version}</version>
+        </dependency>
+
+        <!-- jakarta.annotation.PostConstruct (used by TrainingTypeSeeder) lives
+             in its own small library, separate from Jakarta Persistence
+             (which we get transitively from hibernate-core, above) and
+             separate from Spring itself: Spring knows how to RUN a
+             @PostConstruct method once it sees one (that support is built
+             into spring-context), but it doesn't ship the annotation's
+             definition, so without this dependency the annotation simply
+             doesn't exist on the classpath to import. -->
+        <dependency>
+            <groupId>jakarta.annotation</groupId>
+            <artifactId>jakarta.annotation-api</artifactId>
+            <version>${jakarta.annotation.version}</version>
+        </dependency>
+
+        <!-- Spring's bridge to Hibernate: gives us LocalSessionFactoryBean
+             (to build Hibernate's SessionFactory as a Spring bean) and
+             HibernateTransactionManager (so @Transactional works against
+             a Hibernate Session instead of raw JDBC). -->
+        <dependency>
+            <groupId>org.springframework</groupId>
+            <artifactId>spring-orm</artifactId>
+            <version>${spring.version}</version>
+        </dependency>
+
+        <!-- spring-orm treats this as optional, so we declare it ourselves:
+             gives us DriverManagerDataSource, the simple no-connection-pool
+             DataSource we use to open the "phone line" to H2. -->
+        <dependency>
+            <groupId>org.springframework</groupId>
+            <artifactId>spring-jdbc</artifactId>
+            <version>${spring.version}</version>
+        </dependency>
+
+        <!-- H2: a real relational database that needs no separate server.
+             It either lives in a file next to the project or purely in
+             memory. This is the JDBC driver Hibernate uses to actually
+             talk to it. -->
+        <dependency>
+            <groupId>com.h2database</groupId>
+            <artifactId>h2</artifactId>
+            <version>${h2.version}</version>
+        </dependency>
+
+        <!-- Logging: SLF4J API + Logback implementation -->
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-api</artifactId>
+            <version>${slf4j.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>ch.qos.logback</groupId>
+            <artifactId>logback-classic</artifactId>
+            <version>${logback.version}</version>
+        </dependency>
+
+        <!-- Testing -->
+        <dependency>
+            <groupId>org.springframework</groupId>
+            <artifactId>spring-test</artifactId>
+            <version>${spring.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter</artifactId>
+            <version>${junit.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.mockito</groupId>
+            <artifactId>mockito-core</artifactId>
+            <version>${mockito.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.mockito</groupId>
+            <artifactId>mockito-junit-jupiter</artifactId>
+            <version>${mockito.version}</version>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>3.13.0</version>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <version>3.3.1</version>
+                <configuration>
+                    <!-- Workaround for very new JDKs (e.g. 24+) that Mockito's
+                         bundled Byte Buddy version does not officially
+                         recognize yet. Harmless on older, fully-supported
+                         JDKs (17/21) too. -->
+                    <argLine>-Dnet.bytebuddy.experimental=true</argLine>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
+</project>

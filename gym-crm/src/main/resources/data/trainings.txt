@@ -1,0 +1,2 @@
+1|1|1|Morning Fitness|1|Fitness|2026-06-10|60
+2|2|2|Sunset Yoga|2|Yoga|2026-06-12|45
